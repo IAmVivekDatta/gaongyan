@@ -134,5 +134,5 @@ Distributed under the MIT License. See `LICENSE` for more information.
 -   Feel free to connect with me!
 
 <div align="center">
-  <p>Made with ❤️ and a lot of coffee.</p>
+  <p>Made with ❤️ and a lot of support from copilot.</p>
 </div>
