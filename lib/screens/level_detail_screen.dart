@@ -1,20 +1,23 @@
 import 'package:flutter/material.dart';
 
 class LevelDetailScreen extends StatelessWidget {
-  final int currentLevel;
-  final List<String> requiredModules;
-  final List<String> completedModules;
-
-  const LevelDetailScreen({
-    super.key,
-    required this.currentLevel,
-    required this.requiredModules,
-    required this.completedModules,
-  });
+  const LevelDetailScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    // Simulated data for current and next level
+    int currentLevel = 2;
     int nextLevel = currentLevel + 1;
+    List<String> requiredModules = [
+      'Module 1: Basics',
+      'Module 2: Practice',
+      'Module 3: Quiz',
+      'Module 4: Project',
+    ];
+    List<String> completedModules = [
+      'Module 1: Basics',
+      'Module 2: Practice',
+    ];
 
     return Scaffold(
       appBar: AppBar(
