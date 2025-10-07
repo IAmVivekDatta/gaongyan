@@ -1,0 +1,8 @@
+{
+  "appTitle": "उपलब्धियाँ ऐप",
+  "currentLevel": "वर्तमान स्तर",
+  "maxLevel": "अधिकतम: {maxLevel}",
+  "yourBadges": "आपके बैज",
+  "level": "स्तर {level}",
+  "progress": "{currentXP} / {xpForNextLevel} XP"
+}

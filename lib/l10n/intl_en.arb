@@ -1,0 +1,8 @@
+{
+  "appTitle": "Achievements App",
+  "currentLevel": "Current Level",
+  "maxLevel": "Max: {maxLevel}",
+  "yourBadges": "Your Badges",
+  "level": "Level {level}",
+  "progress": "{currentXP} / {xpForNextLevel} XP"
+}
