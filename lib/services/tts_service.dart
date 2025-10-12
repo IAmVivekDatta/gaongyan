@@ -19,9 +19,9 @@ class TTSService {
   Future<void> init() async {
     if (_isInitialized) return;
 
-    // Default to English
-    await _flutterTts.setLanguage("en-US");
-    await _flutterTts.setSpeechRate(0.5);
+    // Default to Telugu for the primary experience
+    await _flutterTts.setLanguage("te-IN");
+    await _flutterTts.setSpeechRate(0.4);
     await _flutterTts.setVolume(1.0);
     await _flutterTts.setPitch(1.0);
 
@@ -34,10 +34,16 @@ class TTSService {
     'te': 'te-IN',
   };
 
-  Future<void> speak(String text, {String language = "en"}) async {
+  Future<void> speak(String text, {String language = "te"}) async {
     await init();
-    final languageCode = _languageCodes[language] ?? "en-US";
+    final languageCode = _languageCodes[language] ?? "te-IN";
     await _flutterTts.setLanguage(languageCode);
+    // Reduce speech rate for clarity in Telugu
+    if (languageCode == 'te-IN') {
+      await _flutterTts.setSpeechRate(0.4);
+    } else {
+      await _flutterTts.setSpeechRate(0.5);
+    }
     await _flutterTts.speak(text);
   }
 

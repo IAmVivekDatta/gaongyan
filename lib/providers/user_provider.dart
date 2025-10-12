@@ -31,7 +31,7 @@ class UserProvider extends ChangeNotifier {
   int? _userId;
   String? _name;
   int? _age;
-  String _preferredLanguage = 'en';
+  String _preferredLanguage = 'te';
   String? _email;
   String? _avatar;
   String? _createdAt;
@@ -70,25 +70,31 @@ class UserProvider extends ChangeNotifier {
       final user = await UserDatabase.getUser(_userId!);
       if (user != null) {
         _name = user.name;
-        _age = null; // Not in new model, set to null or add to User model if needed
+        _age = null;
         _email = null;
         _avatar = null;
         _createdAt = null;
         _achievements = null;
-        _preferredLanguage = 'en'; // Not in new model, set to default or add to User model if needed
-        notifyListeners();
+        _preferredLanguage = user.preferredLanguage;
+        await _prefs.setString('preferredLanguage', _preferredLanguage);
+      } else {
+        _preferredLanguage = _prefs.getString('preferredLanguage') ?? 'te';
       }
+      notifyListeners();
+    } else {
+      _preferredLanguage = _prefs.getString('preferredLanguage') ?? 'te';
     }
   }
 
   Future<void> login(String name, int age, String language) async {
-    User user = User(name: name, level: 1, xp: 0);
+    User user = User(name: name, level: 1, xp: 0, preferredLanguage: language);
     int id = await UserDatabase.insertUser(user);
     _userId = id;
     _name = name;
     _age = age;
     _preferredLanguage = language;
     await _prefs.setInt('userId', _userId!);
+    await _prefs.setString('preferredLanguage', language);
     notifyListeners();
   }
 
@@ -101,6 +107,7 @@ class UserProvider extends ChangeNotifier {
         name: name ?? user.name,
         level: level ?? user.level,
         xp: xp ?? user.xp,
+        preferredLanguage: user.preferredLanguage,
       );
       await UserDatabase.updateUser(updatedUser);
       _name = updatedUser.name;
@@ -112,6 +119,11 @@ class UserProvider extends ChangeNotifier {
     if (_userId != null) {
       await UserDatabase.updateUserLanguage(_userId!, language);
       _preferredLanguage = language;
+      await _prefs.setString('preferredLanguage', language);
+      notifyListeners();
+    } else {
+      _preferredLanguage = language;
+      await _prefs.setString('preferredLanguage', language);
       notifyListeners();
     }
   }
@@ -120,6 +132,11 @@ class UserProvider extends ChangeNotifier {
     if (_userId != null) {
       await UserDatabase.updateUserLanguage(_userId!, language);
       _preferredLanguage = language;
+      await _prefs.setString('preferredLanguage', language);
+      notifyListeners();
+    } else {
+      _preferredLanguage = language;
+      await _prefs.setString('preferredLanguage', language);
       notifyListeners();
     }
   }
@@ -133,10 +150,12 @@ class UserProvider extends ChangeNotifier {
 
   Future<void> logout() async {
     await _prefs.remove('userId');
+    await _prefs.remove('preferredLanguage');
     _userId = null;
     _name = null;
     _age = null;
-    _preferredLanguage = 'en';
+    _preferredLanguage = 'te';
+    await _prefs.setString('preferredLanguage', _preferredLanguage);
     notifyListeners();
   }
 

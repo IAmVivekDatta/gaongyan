@@ -22,13 +22,15 @@ class _HomeScreenState extends State<HomeScreen> {
   late final BaseDatabaseService _db;
   late ModuleProvider _moduleProvider;
 
-  String _getWelcomeText(String language) {
-    final Map<String, String> welcomeText = {
-      'en': 'Welcome to Gaon Gyaan. You have ${_modules.length} learning modules available.',
-      'hi': 'गांव ज्ञान में आपका स्वागत है। आपके पास ${_modules.length} सीखने के मॉड्यूल उपलब्ध हैं।',
-      'te': 'గ్రామ జ్ఞాన్ కు స్వాగతం. మీకు ${_modules.length} అభ్యాస మాడ్యూల్స్ అందుబాటులో ఉన్నాయి.'
-    };
-    return welcomeText[language] ?? welcomeText['en']!;
+  String _getWelcomeText(String language, int moduleCount) {
+    switch (language) {
+      case 'te':
+        return 'గ్రామ జ్ఞాన్ కు స్వాగతం. మీకు $moduleCount అభ్యాస మాడ్యూల్స్ అందుబాటులో ఉన్నాయి.';
+      case 'hi':
+        return 'गांव ज्ञान में आपका स्वागत है। आपके पास $moduleCount सीखने के मॉड्यूल उपलब्ध हैं।';
+      default:
+        return 'Welcome to Gaon Gyaan. You have $moduleCount learning modules available.';
+    }
   }
   
   @override
@@ -99,9 +101,18 @@ class _HomeScreenState extends State<HomeScreen> {
     return Consumer<ModuleProvider>(
       builder: (context, moduleProvider, _) {
         final modules = moduleProvider.modules.isNotEmpty ? moduleProvider.modules : _modules;
+        final userProvider = context.watch<UserProvider>();
+        final language = userProvider.preferredLanguage;
+        final currentLevelValue = _currentLevel(modules);
+        final overallProgressValue = _overallProgress(modules);
+        final greeting = _getGreeting(userProvider.name, language);
+        final welcomeText = _getWelcomeText(language, modules.length);
+        final currentLevelLabel = _getCurrentLevelLabel(currentLevelValue, language);
+        final overallProgressLabel = _getOverallProgressLabel(overallProgressValue, language);
+        final moduleSectionLabel = _getModulesHeading(language);
         return Scaffold(
           appBar: AppBar(
-            title: const Text('Gaon Gyaan'),
+            title: Text(_getAppTitle(language)),
             backgroundColor: Colors.green,
             actions: [
               IconButton(
@@ -130,17 +141,23 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Consumer<UserProvider>(
-                              builder: (context, userProvider, _) => Text(
-                                'Hello, ${userProvider.name}!',
-                                style: const TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                            Text(
+                              greeting,
+                              style: const TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              welcomeText,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                color: Colors.black87,
                               ),
                             ),
                             Text(
-                              'Current Level: ${_currentLevel(modules)}',
+                              currentLevelLabel,
                               style: const TextStyle(
                                 fontSize: 16,
                                 color: Colors.green,
@@ -149,12 +166,12 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                             const SizedBox(height: 4),
                             LinearProgressIndicator(
-                              value: _overallProgress(modules),
+                              value: overallProgressValue,
                               backgroundColor: Colors.grey.shade200,
                               valueColor: const AlwaysStoppedAnimation<Color>(Colors.green),
                             ),
                             Text(
-                              'Overall Progress: ${(_overallProgress(modules) * 100).toInt()}%',
+                              overallProgressLabel,
                               style: TextStyle(
                                 color: Colors.grey.shade600,
                                 fontSize: 12,
@@ -171,9 +188,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Learning Modules',
-                        style: TextStyle(
+                      Text(
+                        moduleSectionLabel,
+                        style: const TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
                         ),
@@ -190,7 +207,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         itemCount: modules.length,
                         itemBuilder: (context, index) {
-                          return _buildModuleCard(modules[index]);
+                          return _buildModuleCard(modules[index], language);
                         },
                       ),
                     ],
@@ -203,9 +220,7 @@ class _HomeScreenState extends State<HomeScreen> {
             backgroundColor: Colors.green,
             child: const Icon(Icons.headphones),
             onPressed: () async {
-              final userProvider = context.read<UserProvider>();
-              final language = userProvider.preferredLanguage;
-              final text = _getWelcomeText(language);
+              final text = _getWelcomeText(language, modules.length);
               await _tts.speak(text, language: language);
             },
           ),
@@ -214,15 +229,16 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildModuleCard(Map<String, dynamic> module) {
+  Widget _buildModuleCard(Map<String, dynamic> module, String language) {
     return Card(
       elevation: 4,
       child: InkWell(
         onTap: () async {
-          final userProvider = context.read<UserProvider>();
+          final baseTitle = module['title'] as String;
+          final localizedTitle = _localizedModuleTitle(baseTitle, language);
           await _tts.speak(
-            'Opening ${module['title']}',
-            language: userProvider.preferredLanguage,
+            _getOpeningModuleText(localizedTitle, language),
+            language: language,
           );
           if (!mounted) return;
           showModalBottomSheet(
@@ -232,14 +248,14 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 ListTile(
                   leading: const Icon(Icons.book, color: Colors.green),
-                  title: const Text('Learn'),
+                  title: Text(_getActionLabel('learn', language)),
                   onTap: () async {
                     Navigator.pop(context);
                     await Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (context) => ModuleScreen(
-                          title: module['title'] as String,
+                          title: baseTitle,
                         ),
                       ),
                     );
@@ -248,14 +264,14 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 ListTile(
                   leading: const Icon(Icons.sports_esports, color: Colors.teal),
-                  title: const Text('Practice'),
+                  title: Text(_getActionLabel('practice', language)),
                   onTap: () async {
                     Navigator.pop(context);
                     await Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (context) => PracticeScreen(
-                          moduleName: module['title'] as String,
+                          moduleName: baseTitle,
                         ),
                       ),
                     );
@@ -264,14 +280,14 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 ListTile(
                   leading: const Icon(Icons.quiz, color: Colors.orange),
-                  title: const Text('Take Quiz'),
+                  title: Text(_getActionLabel('quiz', language)),
                   onTap: () async {
                     Navigator.pop(context);
                     await Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (context) => QuizScreen(
-                          moduleName: module['title'] as String,
+                          moduleName: baseTitle,
                         ),
                       ),
                     );
@@ -294,7 +310,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(height: 16),
               Text(
-                module['title'] as String,
+                _localizedModuleTitle(module['title'] as String, language),
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontSize: 16,
@@ -309,7 +325,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                '${(((module['progress'] ?? 0.0) as double) * 100).toInt()}% Complete',
+                _getModuleCompletionLabel((module['progress'] ?? 0.0) as double, language),
                 style: TextStyle(
                   color: Colors.grey.shade600,
                   fontSize: 12,
@@ -320,5 +336,145 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
     );
+  }
+
+  String _getAppTitle(String language) {
+    switch (language) {
+      case 'te':
+        return 'గ్రామ జ్ఞాన్';
+      case 'hi':
+        return 'गांव ज्ञान';
+      default:
+        return 'Gaon Gyaan';
+    }
+  }
+
+  String _getGreeting(String? name, String language) {
+    final displayName = name?.isNotEmpty == true ? name! : _getLearnerFallback(language);
+    switch (language) {
+      case 'te':
+        return 'నమస్తే, $displayName!';
+      case 'hi':
+        return 'नमस्ते, $displayName!';
+      default:
+        return 'Hello, $displayName!';
+    }
+  }
+
+  String _getLearnerFallback(String language) {
+    switch (language) {
+      case 'te':
+        return 'స్నేహితుడా';
+      case 'hi':
+        return 'मित्र';
+      default:
+        return 'Learner';
+    }
+  }
+
+  String _getCurrentLevelLabel(int level, String language) {
+    switch (language) {
+      case 'te':
+        return 'ప్రస్తుత స్థాయి: $level';
+      case 'hi':
+        return 'वर्तमान स्तर: $level';
+      default:
+        return 'Current Level: $level';
+    }
+  }
+
+  String _getOverallProgressLabel(double progress, String language) {
+    final percent = (progress * 100).toInt();
+    switch (language) {
+      case 'te':
+        return 'మొత్తం పురోగతి: $percent%';
+      case 'hi':
+        return 'कुल प्रगति: $percent%';
+      default:
+        return 'Overall Progress: $percent%';
+    }
+  }
+
+  String _getModulesHeading(String language) {
+    switch (language) {
+      case 'te':
+        return 'అభ్యాస మాడ్యూల్స్';
+      case 'hi':
+        return 'सीखने के मॉड्यूल';
+      default:
+        return 'Learning Modules';
+    }
+  }
+
+  String _getModuleCompletionLabel(double progress, String language) {
+    final percent = (progress * 100).toInt();
+    switch (language) {
+      case 'te':
+        return '$percent% పూర్తి';
+      case 'hi':
+        return '$percent% पूरा';
+      default:
+        return '$percent% Complete';
+    }
+  }
+
+  String _localizedModuleTitle(String baseTitle, String language) {
+    final translations = {
+      'Basic Smartphone Usage': {
+        'te': 'ప్రాథమిక స్మార్ట్‌ఫోన్ ఉపయోగం',
+        'hi': 'मूलभूत स्मार्टफोन उपयोग',
+      },
+      'Internet Navigation': {
+        'te': 'ఇంటర్నెట్ మార్గదర్శనం',
+        'hi': 'इंटरनेट नेविगेशन',
+      },
+      'Digital Payments': {
+        'te': 'డిజిటల్ చెల్లింపులు',
+        'hi': 'डिजिटल भुगतान',
+      },
+      'Government Services': {
+        'te': 'ప్రభుత్వ సేవలు',
+        'hi': 'सरकारी सेवाएं',
+      },
+    };
+
+    final entry = translations[baseTitle];
+    if (entry != null && entry.containsKey(language)) {
+      return entry[language]!;
+    }
+    return baseTitle;
+  }
+
+  String _getOpeningModuleText(String title, String language) {
+    switch (language) {
+      case 'te':
+        return '$title ను తెరవుతున్నాను';
+      case 'hi':
+        return '$title खोल रहा हूँ';
+      default:
+        return 'Opening $title';
+    }
+  }
+
+  String _getActionLabel(String action, String language) {
+    final labels = {
+      'learn': {
+        'te': 'నేర్చుకోండి',
+        'hi': 'सीखें',
+        'en': 'Learn',
+      },
+      'practice': {
+        'te': 'అభ్యాసం చేయండి',
+        'hi': 'अभ्यास करें',
+        'en': 'Practice',
+      },
+      'quiz': {
+        'te': 'క్విజ్ తీసుకోండి',
+        'hi': 'प्रश्नोत्तरी दें',
+        'en': 'Take Quiz',
+      },
+    };
+
+    return labels[action]?[language] ?? labels[action]?['en'] ?? action;
   }
 }

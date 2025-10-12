@@ -33,43 +33,70 @@ class MainApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: Intl.message('Achievements App', name: 'appTitle'),
-      localizationsDelegates: const [
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      supportedLocales: const [
-        Locale('en'),
-        Locale('hi'),
-      ],
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.green,
-          secondary: Colors.orange,
-        ),
-        cardTheme: CardThemeData(
-          elevation: 2,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-        appBarTheme: const AppBarTheme(
-          centerTitle: true,
-        ),
-      ),
-      routes: {
-        '/': (context) => Consumer<UserProvider>(
-          builder: (context, userProvider, _) {
-            return userProvider.isLoggedIn ? const MainScreen() : const LoginScreen();
+    return Consumer<UserProvider>(
+      builder: (context, userProvider, _) {
+        final languageCode = userProvider.preferredLanguage.isNotEmpty
+            ? userProvider.preferredLanguage
+            : 'te';
+        final locale = Locale(languageCode);
+        Intl.defaultLocale = languageCode;
+
+        return MaterialApp(
+          title: Intl.message('Achievements App', name: 'appTitle'),
+          locale: locale,
+          localeResolutionCallback: (deviceLocale, supportedLocales) {
+            for (final supported in supportedLocales) {
+              if (supported.languageCode == languageCode) {
+                return supported;
+              }
+            }
+            if (deviceLocale != null) {
+              for (final supported in supportedLocales) {
+                if (supported.languageCode == deviceLocale.languageCode) {
+                  return supported;
+                }
+              }
+            }
+            return supportedLocales.first;
           },
-        ),
-        '/profile': (context) => const ProfileScreen(),
-        '/achievements': (context) => AchievementScreen(),
-        '/settings': (context) => const SettingsScreen(),
-        '/login': (context) => const LoginScreen(),
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: const [
+            Locale('te'),
+            Locale('en'),
+            Locale('hi'),
+          ],
+          theme: ThemeData(
+            useMaterial3: true,
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: Colors.green,
+              secondary: Colors.orange,
+            ),
+            cardTheme: CardThemeData(
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            appBarTheme: const AppBarTheme(
+              centerTitle: true,
+            ),
+          ),
+          routes: {
+            '/': (context) => Consumer<UserProvider>(
+                  builder: (context, provider, _) {
+                    return provider.isLoggedIn ? const MainScreen() : const LoginScreen();
+                  },
+                ),
+            '/profile': (context) => const ProfileScreen(),
+            '/achievements': (context) => AchievementScreen(),
+            '/settings': (context) => const SettingsScreen(),
+            '/login': (context) => const LoginScreen(),
+          },
+        );
       },
     );
   }

@@ -20,14 +20,15 @@ class UserDatabase {
     final path = join(dbPath, filePath);
     return await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE users(
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT,
             level INTEGER,
-            xp INTEGER
+            xp INTEGER,
+            preferredLanguage TEXT
           )
         ''');
         await db.execute('''
@@ -50,7 +51,24 @@ class UserDatabase {
           )
         ''');
       },
+      onUpgrade: (db, oldVersion, newVersion) async {
+        if (oldVersion < 2) {
+          final hasColumn = await _columnExists(db, 'users', 'preferredLanguage');
+          if (!hasColumn) {
+            await db.execute("ALTER TABLE users ADD COLUMN preferredLanguage TEXT DEFAULT 'te'");
+          }
+        }
+      },
     );
+  }
+
+  static Future<bool> _columnExists(Database db, String table, String column) async {
+    final result = await db.rawQuery('PRAGMA table_info($table)');
+    for (final row in result) {
+      final name = row['name']?.toString();
+      if (name == column) return true;
+    }
+    return false;
   }
 
   static Future<int> insertUser(User user) async {
